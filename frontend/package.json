@@ -1,0 +1,31 @@
+{
+  "name": "draw-with-frens",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@project-serum/anchor": "^0.25.0",
+    "@solana/wallet-adapter-base": "^0.9.9",
+    "@solana/wallet-adapter-react": "^0.15.8",
+    "@solana/wallet-adapter-react-ui": "^0.9.11",
+    "@solana/wallet-adapter-wallets": "^0.17.0",
+    "@solana/web3.js": "^1.50.1",
+    "clsx": "^1.2.1",
+    "next": "12.1.0",
+    "react": "17.0.2",
+    "react-dom": "17.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.21",
+    "@types/react": "^17.0.39",
+    "autoprefixer": "^10.4.2",
+    "postcss": "^8.4.7",
+    "postcss-import": "^14.0.2",
+    "tailwindcss": "^3.0.23",
+    "typescript": "^4.6.2"
+  }
+}
