@@ -3,7 +3,7 @@ use anchor_lang::solana_program;
 use anchor_spl::token;
 use std::convert::TryFrom;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("Cncq6qR9Hd1xLveR6Z5vJWUkWYBPo75mqwHEfK2LRS17");
 
 #[derive(Debug)]
 #[account]

@@ -3,7 +3,7 @@
 
 from seahorse.prelude import *
 
-declare_id('Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS')
+declare_id('Cncq6qR9Hd1xLveR6Z5vJWUkWYBPo75mqwHEfK2LRS17')
 
 class Pixel(Account):
   pos_x: u8
