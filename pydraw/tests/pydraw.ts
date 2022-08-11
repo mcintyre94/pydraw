@@ -170,7 +170,6 @@ describe("draw-with-frens", () => {
     assert.equal(storedPixel.colB, 0)
   })
 
-  /* TODO
   it("Emits an event when a pixel is created", async () => {
     let events = [];
     const listener = program.addEventListener('PixelChanged', (event: any) => {
@@ -239,5 +238,4 @@ describe("draw-with-frens", () => {
 
     program.removeEventListener(listener)
   })
-  */
 });

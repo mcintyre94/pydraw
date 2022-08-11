@@ -63,6 +63,15 @@ pub fn create_pixel_handler(
 
     pixel_account.bump = *ctx.bumps.get("pixel").unwrap();
 
+    // Emit event
+    emit!(PixelChanged {
+        pos_x,
+        pos_y,
+        col_r: init_col_r,
+        col_g: init_col_g,
+        col_b: init_col_b,
+    });
+
     Ok(())
 }
 
@@ -96,6 +105,15 @@ pub fn update_pixel_handler(
     pixel.col_g = new_col_g;
 
     pixel.col_b = new_col_b;
+
+    // Emit event
+    emit!(PixelChanged {
+        pos_x: pixel.pos_x,
+        pos_y: pixel.pos_y,
+        col_r: new_col_r,
+        col_g: new_col_g,
+        col_b: new_col_b,
+    });
 
     Ok(())
 }
@@ -163,4 +181,13 @@ pub enum ProgramError {
     E003,
     #[msg("The given blue colour is not between 0-255")]
     E004,
+}
+
+#[event]
+pub struct PixelChanged {
+    pub pos_x: u8,
+    pub pos_y: u8,
+    pub col_r: u8,
+    pub col_g: u8,
+    pub col_b: u8,
 }
