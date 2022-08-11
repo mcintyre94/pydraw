@@ -90,6 +90,15 @@ describe("draw-with-frens", () => {
         user: anchorProvider.wallet.publicKey,
         systemProgram: web3.SystemProgram.programId,
       })
+      // Required to make the transaction unique
+      // See https://github.com/coral-xyz/anchor/issues/2091
+      .postInstructions([
+        web3.SystemProgram.transfer({
+          fromPubkey: anchorProvider.wallet.publicKey,
+          toPubkey: web3.Keypair.generate().publicKey,
+          lamports: 1,
+        })
+      ])
       .rpc()
       .then(
         () => Promise.reject(new Error('Expected to error!')),
