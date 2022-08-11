@@ -122,6 +122,38 @@ export type Pydraw = {
       }
     }
   ],
+  "events": [
+    {
+      "name": "PixelChanged",
+      "fields": [
+        {
+          "name": "posX",
+          "type": "u8",
+          "index": false
+        },
+        {
+          "name": "posY",
+          "type": "u8",
+          "index": false
+        },
+        {
+          "name": "colR",
+          "type": "u8",
+          "index": false
+        },
+        {
+          "name": "colG",
+          "type": "u8",
+          "index": false
+        },
+        {
+          "name": "colB",
+          "type": "u8",
+          "index": false
+        }
+      ]
+    }
+  ],
   "errors": [
     {
       "code": 6000,
@@ -273,6 +305,38 @@ export const IDL: Pydraw = {
           }
         ]
       }
+    }
+  ],
+  "events": [
+    {
+      "name": "PixelChanged",
+      "fields": [
+        {
+          "name": "posX",
+          "type": "u8",
+          "index": false
+        },
+        {
+          "name": "posY",
+          "type": "u8",
+          "index": false
+        },
+        {
+          "name": "colR",
+          "type": "u8",
+          "index": false
+        },
+        {
+          "name": "colG",
+          "type": "u8",
+          "index": false
+        },
+        {
+          "name": "colB",
+          "type": "u8",
+          "index": false
+        }
+      ]
     }
   ],
   "errors": [

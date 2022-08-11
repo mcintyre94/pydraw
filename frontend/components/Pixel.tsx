@@ -2,7 +2,6 @@ import { IdlAccounts, Program } from "@project-serum/anchor";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { Pydraw } from "../idl/pydraw";
 import { Color } from "../lib/colors";
-import { pixelUpdated } from "../lib/pixelUpdated"
 
 type PixelAccount = IdlAccounts<Pydraw>['pixel']
 
@@ -12,10 +11,9 @@ interface Props {
   program: Program<Pydraw>,
   pixelData?: PixelAccount,
   selectedColor: Color,
-  setFetchedPixels: any,
 }
 
-export default function Pixel({ posX, posY, program, pixelData, selectedColor, setFetchedPixels }: Props) {
+export default function Pixel({ posX, posY, program, pixelData, selectedColor }: Props) {
   const { colR, colG, colB } = pixelData || {};
   const color = pixelData ? `rgb(${colR}, ${colG}, ${colB})` : "white"
 
@@ -36,8 +34,6 @@ export default function Pixel({ posX, posY, program, pixelData, selectedColor, s
         systemProgram: SystemProgram.programId,
       })
       .rpc();
-
-    await pixelUpdated(posX, posY, setFetchedPixels, program);
   }
 
   const updatePixel = async () => {
@@ -47,8 +43,6 @@ export default function Pixel({ posX, posY, program, pixelData, selectedColor, s
         pixel: getPixelAddress(),
       })
       .rpc();
-
-    await pixelUpdated(posX, posY, setFetchedPixels, program);
   }
 
   return <td

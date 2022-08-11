@@ -103,7 +103,6 @@ export default function Canvas({ program, selectedColor }: Props) {
                     pixelData={pixelData}
                     selectedColor={selectedColor}
                     key={x}
-                    setFetchedPixels={setFetchedPixels}
                   />
                 })}
               </tr>
