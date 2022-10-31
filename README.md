@@ -18,8 +18,6 @@ Tests are in the **tests/** directory, and are normal Anchor tests. The test sui
 
 ## Differences from the original
 
-- It doesn't have events yet: https://github.com/ameliatastic/seahorse-lang/issues/1
-
 - The program name is changed because it needs to be snake case for Seahorse (was `draw-with-frens`)
 
 - We're not checking the precise PDA seeds + bump on the update instruction. But this is ok because it's still required to be a `Pixel` account and the seeds we're checking are stored on-chain in that account anyway. Basically if `create_pixel` works correctly then `update_pixel` doesn't need to check the account beyond making sure it's a `Pixel`.
