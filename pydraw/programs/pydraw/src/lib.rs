@@ -1,152 +1,185 @@
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+#![allow(unused_mut)]
+
+pub mod dot;
+
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program;
-use anchor_spl::token;
-use std::convert::TryFrom;
+use anchor_spl::{
+    associated_token::{self, AssociatedToken},
+    token::{self, Mint, Token, TokenAccount},
+};
+
+use dot::program::*;
+use std::{cell::RefCell, rc::Rc};
 
 declare_id!("Cncq6qR9Hd1xLveR6Z5vJWUkWYBPo75mqwHEfK2LRS17");
 
-#[derive(Debug)]
-#[account]
-pub struct Pixel {
-    pos_x: u8,
-    pos_y: u8,
-    col_r: u8,
-    col_g: u8,
-    col_b: u8,
-    bump: u8,
-}
+pub mod seahorse_util {
+    use super::*;
+    use std::{collections::HashMap, fmt::Debug, ops::Deref};
 
-pub fn create_pixel_handler(
-    mut ctx: Context<CreatePixel>,
-    mut pos_x: u8,
-    mut pos_y: u8,
-    mut init_col_r: u8,
-    mut init_col_g: u8,
-    mut init_col_b: u8,
-) -> Result<()> {
-    let mut pixel = &mut ctx.accounts.pixel;
-    let mut user = &mut ctx.accounts.user;
-    let mut pixel_account = pixel;
-    let mut MIN_POS: u8 = <u8 as TryFrom<_>>::try_from(0).unwrap();
-    let mut MAX_POS: u8 = <u8 as TryFrom<_>>::try_from(99).unwrap();
-    let mut MIN_COL: u8 = <u8 as TryFrom<_>>::try_from(0).unwrap();
-    let mut MAX_COL: u8 = <u8 as TryFrom<_>>::try_from(255).unwrap();
+    pub struct Mutable<T>(Rc<RefCell<T>>);
 
-    require!((MIN_POS <= pos_x) && (pos_x <= MAX_POS), ProgramError::E000);
+    impl<T> Mutable<T> {
+        pub fn new(obj: T) -> Self {
+            Self(Rc::new(RefCell::new(obj)))
+        }
+    }
 
-    require!((MIN_POS <= pos_y) && (pos_y <= MAX_POS), ProgramError::E001);
+    impl<T> Clone for Mutable<T> {
+        fn clone(&self) -> Self {
+            Self(self.0.clone())
+        }
+    }
 
-    require!(
-        (MIN_COL <= init_col_r) && (init_col_r <= MAX_COL),
-        ProgramError::E002
-    );
+    impl<T> Deref for Mutable<T> {
+        type Target = Rc<RefCell<T>>;
 
-    require!(
-        (MIN_COL <= init_col_g) && (init_col_g <= MAX_COL),
-        ProgramError::E003
-    );
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
 
-    require!(
-        (MIN_COL <= init_col_b) && (init_col_b <= MAX_COL),
-        ProgramError::E004
-    );
+    impl<T: Debug> Debug for Mutable<T> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{:?}", self.0)
+        }
+    }
 
-    pixel_account.pos_x = pos_x;
+    impl<T: Default> Default for Mutable<T> {
+        fn default() -> Self {
+            Self::new(T::default())
+        }
+    }
 
-    pixel_account.pos_y = pos_y;
+    impl<T: Clone> Mutable<Vec<T>> {
+        pub fn wrapped_index(&self, mut index: i128) -> usize {
+            if index > 0 {
+                return index.try_into().unwrap();
+            }
 
-    pixel_account.col_r = init_col_r;
+            index += self.borrow().len() as i128;
 
-    pixel_account.col_g = init_col_g;
+            return index.try_into().unwrap();
+        }
+    }
 
-    pixel_account.col_b = init_col_b;
+    impl<T: Clone, const N: usize> Mutable<[T; N]> {
+        pub fn wrapped_index(&self, mut index: i128) -> usize {
+            if index > 0 {
+                return index.try_into().unwrap();
+            }
 
-    pixel_account.bump = *ctx.bumps.get("pixel").unwrap();
+            index += self.borrow().len() as i128;
 
-    // Emit event
-    emit!(PixelChanged {
-        pos_x,
-        pos_y,
-        col_r: init_col_r,
-        col_g: init_col_g,
-        col_b: init_col_b,
-    });
+            return index.try_into().unwrap();
+        }
+    }
 
-    Ok(())
-}
+    #[derive(Clone)]
+    pub struct Empty<T: Clone> {
+        pub account: T,
+        pub bump: Option<u8>,
+    }
 
-pub fn update_pixel_handler(
-    mut ctx: Context<UpdatePixel>,
-    mut new_col_r: u8,
-    mut new_col_g: u8,
-    mut new_col_b: u8,
-) -> Result<()> {
-    let mut pixel = &mut ctx.accounts.pixel;
-    let mut MIN_COL: u8 = <u8 as TryFrom<_>>::try_from(0).unwrap();
-    let mut MAX_COL: u8 = <u8 as TryFrom<_>>::try_from(255).unwrap();
+    #[derive(Clone, Debug)]
+    pub struct ProgramsMap<'info>(pub HashMap<&'static str, AccountInfo<'info>>);
 
-    require!(
-        (MIN_COL <= new_col_r) && (new_col_r <= MAX_COL),
-        ProgramError::E002
-    );
+    impl<'info> ProgramsMap<'info> {
+        pub fn get(&self, name: &'static str) -> AccountInfo<'info> {
+            self.0.get(name).unwrap().clone()
+        }
+    }
 
-    require!(
-        (MIN_COL <= new_col_g) && (new_col_g <= MAX_COL),
-        ProgramError::E003
-    );
+    #[derive(Clone, Debug)]
+    pub struct WithPrograms<'info, 'entrypoint, A> {
+        pub account: &'entrypoint A,
+        pub programs: &'entrypoint ProgramsMap<'info>,
+    }
 
-    require!(
-        (MIN_COL <= new_col_b) && (new_col_b <= MAX_COL),
-        ProgramError::E004
-    );
+    impl<'info, 'entrypoint, A> Deref for WithPrograms<'info, 'entrypoint, A> {
+        type Target = A;
 
-    pixel.col_r = new_col_r;
+        fn deref(&self) -> &Self::Target {
+            &self.account
+        }
+    }
 
-    pixel.col_g = new_col_g;
+    pub type SeahorseAccount<'info, 'entrypoint, A> =
+        WithPrograms<'info, 'entrypoint, Box<Account<'info, A>>>;
 
-    pixel.col_b = new_col_b;
+    pub type SeahorseSigner<'info, 'entrypoint> = WithPrograms<'info, 'entrypoint, Signer<'info>>;
 
-    // Emit event
-    emit!(PixelChanged {
-        pos_x: pixel.pos_x,
-        pos_y: pixel.pos_y,
-        col_r: new_col_r,
-        col_g: new_col_g,
-        col_b: new_col_b,
-    });
+    #[derive(Clone, Debug)]
+    pub struct CpiAccount<'info> {
+        #[doc = "CHECK: CpiAccounts temporarily store AccountInfos."]
+        pub account_info: AccountInfo<'info>,
+        pub is_writable: bool,
+        pub is_signer: bool,
+        pub seeds: Option<Vec<Vec<u8>>>,
+    }
 
-    Ok(())
-}
+    #[macro_export]
+    macro_rules! assign {
+        ($ lval : expr , $ rval : expr) => {{
+            let temp = $rval;
 
-#[derive(Accounts)]
-# [instruction (pos_x : u8 , pos_y : u8)]
-pub struct CreatePixel<'info> {
-    #[account(
-        init,
-        payer = user,
-        seeds = [
-            "pixel".as_bytes().as_ref(),
-            pos_x.to_le_bytes().as_ref(),
-            pos_y.to_le_bytes().as_ref()
-        ],
-        bump,
-        space = 8 + std::mem::size_of::<Pixel>()
-    )]
-    pub pixel: Box<Account<'info, Pixel>>,
-    #[account(mut)]
-    pub user: Signer<'info>,
-    pub system_program: Program<'info, System>,
-}
+            $lval = temp;
+        }};
+    }
 
-#[derive(Accounts)]
-pub struct UpdatePixel<'info> {
-    #[account(mut)]
-    pub pixel: Box<Account<'info, Pixel>>,
+    #[macro_export]
+    macro_rules! index_assign {
+        ($ lval : expr , $ idx : expr , $ rval : expr) => {
+            let temp_rval = $rval;
+            let temp_idx = $idx;
+
+            $lval[temp_idx] = temp_rval;
+        };
+    }
 }
 
 #[program]
-pub mod pydraw {
+mod pydraw {
     use super::*;
+    use seahorse_util::*;
+    use std::collections::HashMap;
+
+    #[derive(Accounts)]
+    # [instruction (new_col_r : u8 , new_col_g : u8 , new_col_b : u8)]
+    pub struct UpdatePixel<'info> {
+        #[account(mut)]
+        pub pixel: Box<Account<'info, dot::program::Pixel>>,
+    }
+
+    pub fn update_pixel(
+        ctx: Context<UpdatePixel>,
+        new_col_r: u8,
+        new_col_g: u8,
+        new_col_b: u8,
+    ) -> Result<()> {
+        let mut programs = HashMap::new();
+        let programs_map = ProgramsMap(programs);
+        let pixel = dot::program::Pixel::load(&mut ctx.accounts.pixel, &programs_map);
+
+        update_pixel_handler(pixel.clone(), new_col_r, new_col_g, new_col_b);
+
+        dot::program::Pixel::store(pixel);
+
+        return Ok(());
+    }
+
+    #[derive(Accounts)]
+    # [instruction (pos_x : u8 , pos_y : u8 , init_col_r : u8 , init_col_g : u8 , init_col_b : u8)]
+    pub struct CreatePixel<'info> {
+        # [account (init , space = std :: mem :: size_of :: < dot :: program :: Pixel > () + 8 , payer = user , seeds = ["pixel" . as_bytes () . as_ref () , pos_x . to_le_bytes () . as_ref () , pos_y . to_le_bytes () . as_ref ()] , bump)]
+        pub pixel: Box<Account<'info, dot::program::Pixel>>,
+        #[account(mut)]
+        pub user: Signer<'info>,
+        pub system_program: Program<'info, System>,
+        pub rent: Sysvar<'info, Rent>,
+    }
 
     pub fn create_pixel(
         ctx: Context<CreatePixel>,
@@ -156,38 +189,36 @@ pub mod pydraw {
         init_col_g: u8,
         init_col_b: u8,
     ) -> Result<()> {
-        create_pixel_handler(ctx, pos_x, pos_y, init_col_r, init_col_g, init_col_b)
+        let mut programs = HashMap::new();
+
+        programs.insert(
+            "system_program",
+            ctx.accounts.system_program.to_account_info(),
+        );
+
+        let programs_map = ProgramsMap(programs);
+        let pixel = Empty {
+            account: dot::program::Pixel::load(&mut ctx.accounts.pixel, &programs_map),
+            bump: ctx.bumps.get("pixel").map(|bump| *bump),
+        };
+
+        let user = SeahorseSigner {
+            account: &ctx.accounts.user,
+            programs: &programs_map,
+        };
+
+        create_pixel_handler(
+            pixel.clone(),
+            user.clone(),
+            pos_x,
+            pos_y,
+            init_col_r,
+            init_col_g,
+            init_col_b,
+        );
+
+        dot::program::Pixel::store(pixel.account);
+
+        return Ok(());
     }
-
-    pub fn update_pixel(
-        ctx: Context<UpdatePixel>,
-        new_col_r: u8,
-        new_col_g: u8,
-        new_col_b: u8,
-    ) -> Result<()> {
-        update_pixel_handler(ctx, new_col_r, new_col_g, new_col_b)
-    }
-}
-
-#[error_code]
-pub enum ProgramError {
-    #[msg("The given X co-ordinate is not between 0-99")]
-    E000,
-    #[msg("The given Y co-ordinate is not between 0-99")]
-    E001,
-    #[msg("The given red colour is not between 0-255")]
-    E002,
-    #[msg("The given green colour is not between 0-255")]
-    E003,
-    #[msg("The given blue colour is not between 0-255")]
-    E004,
-}
-
-#[event]
-pub struct PixelChanged {
-    pub pos_x: u8,
-    pub pos_y: u8,
-    pub col_r: u8,
-    pub col_g: u8,
-    pub col_b: u8,
 }

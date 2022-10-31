@@ -57,8 +57,9 @@ describe("draw-with-frens", () => {
       .then(
         () => Promise.reject(new Error('Expected to error!')),
         (e: AnchorError) => {
-          // Log is eg. 'AnchorError thrown in programs/pydraw/src/lib.rs:36. Error Code: E001. Error Number: 6001. Error Message: The given Y co-ordinate is not between 0-99.'
-          assert.ok(e.errorLogs.some(log => log.includes('The given Y co-ordinate is not between 0-99.')))
+          console.error(e);
+          // Log is eg. 'Program log: panicked at 'The given Y co-ordinate is not between 0-99', programs/pydraw/src/dot/program.rs:144:9"'
+          assert.ok(e.logs.some(log => log.includes('The given Y co-ordinate is not between 0-99')))
         }
       );
   })
